@@ -1,0 +1,441 @@
+<!DOCTYPE html>
+<html lang="lv">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Svētku gada ritenis</title>
+<style>
+  *,*::before,*::after{box-sizing:border-box;margin:0;padding:0;}
+  :root{
+    --bg:#FBF9F6;--surface:#fff;--line:#E3DCD4;--soft:#F4EFE9;
+    --text:#1F3348;--muted:#6D7B88;--blue:#2E74B5;--terra:#C75000;
+    --ok:#2D8A3E;--no:#C0392B;
+  }
+  html,body{height:100%;overflow:hidden;background:var(--bg);}
+  body{font-family:'Candara','Aptos','Segoe UI',sans-serif;color:var(--text);-webkit-user-select:none;user-select:none;touch-action:none;}
+  #frame{position:fixed;inset:0;display:flex;align-items:center;justify-content:center;overflow:hidden;}
+  #stage{width:1600px;height:900px;flex:0 0 auto;transform-origin:center center;padding:22px 36px 22px;display:flex;flex-direction:column;position:relative;}
+  header{display:flex;align-items:flex-end;justify-content:space-between;gap:20px;margin-bottom:14px;}
+  h1{font-size:40px;letter-spacing:-0.5px;line-height:1;}
+  h1 small{display:block;font-size:19px;color:var(--muted);letter-spacing:0;margin-top:6px;font-weight:400;}
+  .tabs{display:flex;gap:8px;background:var(--soft);padding:6px;border-radius:18px;}
+  .tab{font-family:inherit;font-size:21px;padding:11px 22px;border-radius:13px;border:0;background:transparent;color:var(--text);cursor:pointer;}
+  .tab.on{background:var(--blue);color:#fff;}
+  .card{background:var(--surface);border:1px solid var(--line);border-radius:22px;padding:18px 20px;}
+  .label{font-size:14px;letter-spacing:0.12em;text-transform:uppercase;color:var(--muted);margin-bottom:8px;}
+  .btn{font-family:inherit;font-size:20px;padding:12px 22px;border-radius:14px;border:1px solid var(--line);background:#fff;color:var(--text);cursor:pointer;}
+  .btn.main{background:var(--blue);border-color:var(--blue);color:#fff;}
+  .btn.terra{background:var(--terra);border-color:var(--terra);color:#fff;}
+  .btn:active{transform:scale(0.97);}
+  .btn:focus-visible,.tab:focus-visible{outline:4px solid var(--terra);outline-offset:3px;}
+  .btn[disabled]{opacity:.4;cursor:default;}
+
+  .main{display:flex;gap:26px;flex:1;min-height:0;}
+  .wheelbox{width:800px;height:790px;flex-shrink:0;position:relative;}
+  #wheel{width:800px;height:790px;display:block;}
+  .sector{cursor:pointer;transition:filter .2s,opacity .2s;}
+  .sector:hover{filter:brightness(1.05);}
+  .sector.dim{opacity:.45;}
+  .sector.target{filter:brightness(1.12) drop-shadow(0 0 8px rgba(0,0,0,.25));}
+  .sname{font-family:'Candara','Aptos',sans-serif;font-weight:700;fill:#fff;pointer-events:none;paint-order:stroke;stroke:rgba(0,0,0,.18);stroke-width:3px;}
+  .slot{fill:rgba(255,255,255,.35);stroke:rgba(255,255,255,.9);stroke-width:2.5;stroke-dasharray:6 5;pointer-events:none;}
+  .side{flex:1;min-width:0;display:flex;flex-direction:column;gap:14px;}
+  /* iepazīšana */
+  .hol-head{display:flex;align-items:center;gap:18px;}
+  .hol-head .ic{width:92px;height:92px;flex-shrink:0;border-radius:22px;display:flex;align-items:center;justify-content:center;}
+  .hol-head .ic svg{width:74px;height:74px;}
+  .hol-head h2{font-size:38px;line-height:1.05;}
+  .hol-head p{font-size:19px;color:var(--muted);margin-top:6px;line-height:1.35;}
+  .view{display:flex;gap:6px;background:var(--soft);padding:5px;border-radius:16px;align-self:flex-start;}
+  .view .tab{font-size:19px;padding:8px 18px;}
+  .songs{display:grid;grid-template-columns:1fr 1fr;gap:10px;align-content:start;flex:1;min-height:0;}
+  .songs .task4,.songs .row2{grid-column:span 2;}
+  .song{position:relative;background:#fff;border:2px solid var(--line);border-radius:16px;padding:30px 16px 12px;cursor:pointer;font-size:19px;line-height:1.38;animation:pop .35s ease both;}
+  .song .ld{position:absolute;left:16px;top:8px;font-size:14px;color:var(--muted);}
+  .song.on{border-color:var(--terra);background:#FDF1E9;}
+  .task4{font-size:17.5px;line-height:1.4;background:#EEF4FB;border:1px solid #CFE0F2;border-radius:16px;padding:12px 16px;}
+  .task4 b{color:var(--blue);}
+  .row2{display:flex;gap:14px;align-items:center;}
+  .row2 .btn{flex:0 0 auto;}
+  #bigSong{position:absolute;inset:0;background:var(--bg);z-index:80;display:none;flex-direction:column;align-items:center;justify-content:center;gap:18px;text-align:center;padding:20px 60px;}
+  #bigSong.on{display:flex;}
+  #bigSong .txt{font-size:46px;line-height:1.32;}
+  #bigSong svg{width:96px;height:96px;}
+  #bigSong .btask{max-width:1100px;text-align:left;background:#EEF4FB;border:1px solid #CFE0F2;border-radius:20px;padding:16px 26px;font-size:22px;line-height:1.45;}
+  #bigSong .btask b{color:var(--blue);}
+  #bigSong .btask ol{margin:4px 0 0 26px;}
+  #bigSong .src{font-size:20px;color:var(--muted);}
+  .items{display:flex;flex-direction:column;gap:8px;flex:1;min-height:0;}
+  .item{display:flex;gap:14px;align-items:center;background:var(--surface);border:1px solid var(--line);border-radius:16px;padding:8px 14px;animation:pop .35s ease both;}
+  .item svg{width:56px;height:56px;flex-shrink:0;}
+  .item b{font-size:20px;display:block;margin-bottom:1px;}
+  .item span{font-size:17px;line-height:1.32;color:#34495E;}
+  .note{font-size:18px;line-height:1.4;background:#FDF1E9;border:1px solid #F0D5C2;border-radius:16px;padding:12px 16px;}
+  .note b{color:var(--terra);font-weight:700;}
+  .hint{font-size:22px;color:var(--muted);text-align:center;margin:auto;line-height:1.5;max-width:520px;}
+  .hint svg{width:120px;height:120px;display:block;margin:0 auto 16px;}
+  @keyframes pop{from{opacity:0;transform:translateY(8px);}to{opacity:1;transform:none;}}
+  /* šķirošana */
+  .tray{display:grid;grid-template-columns:repeat(6,1fr);gap:10px;}
+  .tile{aspect-ratio:1;background:#fff;border:2px solid var(--line);border-radius:18px;display:flex;align-items:center;justify-content:center;cursor:grab;touch-action:none;transition:transform .15s,border-color .15s;}
+  .tile svg{width:78%;height:78%;pointer-events:none;}
+  .tile.sel{border-color:var(--terra);box-shadow:0 0 0 4px rgba(199,80,0,.18);transform:scale(1.05);}
+  .tile.used{visibility:hidden;}
+  .tile.shake{animation:shake .45s;}
+  @keyframes shake{0%,100%{transform:none}20%{transform:translateX(-9px)}40%{transform:translateX(9px)}60%{transform:translateX(-6px)}80%{transform:translateX(6px)}}
+  .tname{font-size:15px;text-align:center;color:var(--muted);margin-top:4px;}
+  .tilewrap{display:flex;flex-direction:column;}
+  .msg{font-size:21px;line-height:1.35;min-height:48px;display:flex;align-items:center;gap:12px;}
+  .msg.ok{color:var(--ok);} .msg.no{color:var(--no);}
+  .score{font-size:30px;}
+  .bar{height:14px;border-radius:8px;background:#EFE8E0;overflow:hidden;margin-top:8px;}
+  .bar span{display:block;height:100%;width:0;background:var(--ok);transition:width .4s;}
+  #ghost{position:absolute;width:96px;height:96px;pointer-events:none;z-index:50;display:none;filter:drop-shadow(0 6px 10px rgba(0,0,0,.25));}
+  .placed{animation:pop .4s ease both;}
+  .done{font-size:26px;text-align:center;line-height:1.45;}
+</style>
+</head>
+<body>
+<div id="frame"><div id="stage">
+
+  <header>
+    <h1>Svētku gada ritenis<small>Latviešu gadskārtu svētki un to simboli</small></h1>
+    <div class="tabs">
+      <button class="tab on" data-mode="learn">Iepazīsti svētkus</button>
+      <button class="tab" data-mode="sort">Sašķiro simbolus</button>
+    </div>
+  </header>
+
+  <div class="main">
+    <div class="wheelbox"><svg id="wheel" viewBox="0 0 800 790"></svg></div>
+
+    <div class="side" id="learn">
+      <div class="hint" id="startHint"></div>
+      <div id="holView" style="display:none;flex-direction:column;gap:14px;flex:1;min-height:0;">
+        <div class="hol-head">
+          <div class="ic" id="hIcon"></div>
+          <div><h2 id="hName"></h2><p id="hWhen"></p></div>
+        </div>
+        <div class="view"><button class="tab on" data-v="trad">Tradīcijas</button><button class="tab" data-v="song">Tautasdziesmas</button></div>
+        <div class="items" id="items"></div>
+        <div class="songs" id="songs" style="display:none"></div>
+        <div class="note" id="note"><b>Vai zini?</b> Daudzas ģimenes šīs tradīcijas kopj arī mūsdienās.</div>
+      </div>
+    </div>
+
+    <div class="side" id="sort" style="display:none">
+      <div class="card">
+        <div class="label">Uzdevums</div>
+        <p style="font-size:20px;line-height:1.4">Pieskaries simbolam un tad svētkiem, pie kuriem tas pieder. Simbolu var arī aizvilkt uz riteņa.</p>
+      </div>
+      <div class="tray" id="tray"></div>
+      <div class="card" style="margin-top:auto">
+        <div class="score">Savās vietās: <b id="cnt">0</b> no 18</div>
+        <div class="bar"><span id="bar"></span></div>
+        <div class="msg" id="msg"></div>
+        <div style="display:flex;justify-content:flex-end"><button class="btn" id="reset">Sajaukt no jauna</button></div>
+      </div>
+    </div>
+  </div>
+  <div id="ghost"></div>
+  <div id="bigSong"><div id="bsIc"></div><div class="txt" id="bsTxt"></div><div class="src" id="bsSrc"></div><div class="btask"><b>Tavs uzdevums: uzglezno šo tautasdziesmu!</b><ol><li>Izlasi tautasdziesmu un iedomājies, kas tajā notiek.</li><li>Izvēlies galvenos tēlus un priekšmetus. Kādās krāsās tie būs?</li><li>Veido tos no ģeometriskām figūrām — apļiem, ovāliem, trīsstūriem un rombiem.</li><li>Vispirms uzglezno lielās formas, beigās pievieno sīkās detaļas.</li></ol></div><button class="btn" id="bsClose">Aizvērt</button></div>
+</div></div>
+
+<script>
+/* ═══ 16:9 mērogošana un iframe augstums ═══ */
+const stage=document.getElementById('stage');
+let SCALE=1;
+function fit(){SCALE=Math.min(window.innerWidth/1600,window.innerHeight/900);stage.style.transform='scale('+SCALE+')';}
+function reportHeight(){window.parent.postMessage({iframeHeight:Math.round(window.innerWidth*9/16)},'*');}
+window.addEventListener('resize',()=>{fit();reportHeight();});
+window.addEventListener('load',()=>{fit();reportHeight();});
+fit();reportHeight();
+function shuffle(a){a=a.slice();for(let i=a.length-1;i>0;i--){const j=Math.floor(Math.random()*(i+1));[a[i],a[j]]=[a[j],a[i]];}return a;}
+
+/* ═══ Stilizēti svētku simboli (viewBox 0 0 100 100), veidoti no ģeometriskām figūrām ═══ */
+const ICONS={
+ saule:`<g fill="#F2B01E"><polygon points="50,4 55,20 45,20"/><polygon points="50,96 55,80 45,80"/><polygon points="4,50 20,45 20,55"/><polygon points="96,50 80,45 80,55"/><polygon points="17,17 29,24 24,29"/><polygon points="83,83 71,76 76,71"/><polygon points="83,17 76,29 71,24"/><polygon points="17,83 24,71 29,76"/></g><circle cx="50" cy="50" r="24" fill="#F2B01E"/><circle cx="50" cy="50" r="15" fill="#F7CF5A"/><circle cx="50" cy="50" r="6" fill="#E8833A"/>`,
+ puzurs:`<line x1="50" y1="0" x2="50" y2="12" stroke="#8A6A2F" stroke-width="1.5"/><g fill="#F3DFA2" stroke="#B8892E" stroke-width="2.2" stroke-linejoin="round"><polygon points="50,12 74,42 50,72 26,42"/></g><g stroke="#B8892E" stroke-width="1.6"><line x1="50" y1="12" x2="44" y2="42"/><line x1="50" y1="72" x2="44" y2="42"/><line x1="26" y1="42" x2="44" y2="42"/><line x1="74" y1="42" x2="44" y2="42"/></g><g fill="#F3DFA2" stroke="#B8892E" stroke-width="1.8"><polygon points="26,42 33,54 26,66 19,54"/><polygon points="74,42 81,54 74,66 67,54"/><polygon points="50,72 57,82 50,92 43,82"/></g><g fill="#C75000"><polygon points="23,66 29,66 26,74"/><polygon points="71,66 77,66 74,74"/><polygon points="47,92 53,92 50,99"/></g>`,
+ egle:`<rect x="44" y="78" width="12" height="16" fill="#8A5A2B"/><polygon points="50,8 70,38 30,38" fill="#2D8A3E"/><polygon points="50,24 78,60 22,60" fill="#2D8A3E"/><polygon points="50,42 86,82 14,82" fill="#2D8A3E"/><polygon points="50,2 53,9 60,9 54,13 56,20 50,16 44,20 46,13 40,9 47,9" fill="#F2B01E"/>`,
+ blukis:`<rect x="14" y="40" width="64" height="30" rx="4" fill="#9A6A38"/><ellipse cx="78" cy="55" rx="9" ry="15" fill="#D7A86E"/><ellipse cx="78" cy="55" rx="5" ry="9" fill="none" stroke="#9A6A38" stroke-width="1.5"/><circle cx="78" cy="55" r="2" fill="#9A6A38"/><g stroke="#7A4E24" stroke-width="2"><line x1="24" y1="46" x2="44" y2="46"/><line x1="36" y1="58" x2="62" y2="58"/><line x1="20" y1="64" x2="34" y2="64"/></g><path d="M14 55 Q8 50 2 36" fill="none" stroke="#6D7B88" stroke-width="2.5"/>`,
+ kaza:`<polygon points="30,30 16,6 38,26" fill="#8A6A4F"/><polygon points="70,30 84,6 62,26" fill="#8A6A4F"/><polygon points="24,32 76,32 70,66 50,80 30,66" fill="#EDE6DA" stroke="#8A6A4F" stroke-width="2"/><polygon points="20,36 8,30 24,44" fill="#EDE6DA" stroke="#8A6A4F" stroke-width="2"/><polygon points="80,36 92,30 76,44" fill="#EDE6DA" stroke="#8A6A4F" stroke-width="2"/><circle cx="40" cy="46" r="4.5" fill="#1F3348"/><circle cx="60" cy="46" r="4.5" fill="#1F3348"/><polygon points="46,62 54,62 50,68" fill="#1F3348"/><polygon points="42,78 58,78 50,97" fill="#B9AE9C"/>`,
+ lacis:`<circle cx="26" cy="24" r="12" fill="#6B4A2E"/><circle cx="74" cy="24" r="12" fill="#6B4A2E"/><circle cx="26" cy="24" r="6" fill="#C9A27A"/><circle cx="74" cy="24" r="6" fill="#C9A27A"/><circle cx="50" cy="52" r="36" fill="#6B4A2E"/><ellipse cx="50" cy="66" rx="16" ry="12" fill="#C9A27A"/><ellipse cx="50" cy="60" rx="6" ry="4" fill="#1F3348"/><circle cx="37" cy="44" r="4.5" fill="#1F3348"/><circle cx="63" cy="44" r="4.5" fill="#1F3348"/>`,
+ svece:`<rect x="38" y="36" width="24" height="56" rx="3" fill="#F3E9D2" stroke="#C99A3B" stroke-width="2"/><line x1="50" y1="36" x2="50" y2="28" stroke="#1F3348" stroke-width="2"/><ellipse cx="50" cy="18" rx="8" ry="14" fill="#F2B01E"/><ellipse cx="50" cy="22" rx="4" ry="7" fill="#E8833A"/>`,
+ auseklis:`<g fill="none" stroke="#2E74B5" stroke-width="6" stroke-linejoin="miter"><rect x="22" y="22" width="56" height="56"/><rect x="22" y="22" width="56" height="56" transform="rotate(45 50 50)"/></g>`,
+ piparkuka:`<circle cx="50" cy="20" r="14" fill="#B8733A"/><rect x="34" y="32" width="32" height="40" rx="10" fill="#B8733A"/><rect x="14" y="36" width="72" height="14" rx="7" fill="#B8733A"/><rect x="34" y="62" width="13" height="32" rx="6" fill="#B8733A"/><rect x="53" y="62" width="13" height="32" rx="6" fill="#B8733A"/><g fill="#fff"><circle cx="45" cy="18" r="2.2"/><circle cx="55" cy="18" r="2.2"/><circle cx="50" cy="44" r="2.5"/><circle cx="50" cy="54" r="2.5"/></g><path d="M44 25 Q50 29 56 25" fill="none" stroke="#fff" stroke-width="2"/>`,
+ ragavas:`<path d="M8 72 H78 Q92 72 92 58" fill="none" stroke="#7A4E24" stroke-width="5" stroke-linecap="round"/><rect x="18" y="42" width="58" height="12" rx="2" fill="#C75000"/><g fill="#7A4E24"><rect x="24" y="54" width="6" height="18"/><rect x="62" y="54" width="6" height="18"/></g><path d="M18 42 Q6 36 10 24" fill="none" stroke="#6D7B88" stroke-width="2.5"/>`,
+ lins:`<line x1="50" y1="54" x2="50" y2="98" stroke="#2D8A3E" stroke-width="3"/><g fill="#5B8FD9"><ellipse cx="50" cy="20" rx="10" ry="16"/><ellipse cx="50" cy="20" rx="10" ry="16" transform="rotate(72 50 38)"/><ellipse cx="50" cy="20" rx="10" ry="16" transform="rotate(144 50 38)"/><ellipse cx="50" cy="20" rx="10" ry="16" transform="rotate(216 50 38)"/><ellipse cx="50" cy="20" rx="10" ry="16" transform="rotate(288 50 38)"/></g><circle cx="50" cy="38" r="6" fill="#F2B01E"/>`,
+ ola:`<defs><clipPath id="CLIPID"><ellipse cx="50" cy="54" rx="30" ry="40"/></clipPath></defs><ellipse cx="50" cy="54" rx="30" ry="40" fill="#C75000"/><g clip-path="url(#CLIPID)"><rect x="0" y="44" width="100" height="16" fill="#F2B01E"/><polygon points="20,44 28,34 36,44 44,34 52,44 60,34 68,44 76,34 84,44" fill="#F2B01E"/><polygon points="20,60 28,70 36,60 44,70 52,60 60,70 68,60 76,70 84,60" fill="#F2B01E"/></g><g fill="#fff"><circle cx="50" cy="22" r="3"/><circle cx="40" cy="26" r="2.5"/><circle cx="60" cy="26" r="2.5"/><circle cx="50" cy="84" r="3"/></g>`,
+ supoles:`<g fill="#7A4E24"><rect x="12" y="10" width="76" height="8" rx="2"/><polygon points="16,18 24,18 14,94 6,94"/><polygon points="76,18 84,18 94,94 86,94"/></g><g stroke="#6D7B88" stroke-width="2.5"><line x1="32" y1="18" x2="32" y2="68"/><line x1="68" y1="18" x2="68" y2="68"/></g><rect x="26" y="66" width="48" height="8" rx="2" fill="#C75000"/>`,
+ pupoli:`<path d="M20 92 Q40 60 50 8" fill="none" stroke="#7A4E24" stroke-width="3"/><path d="M42 44 Q60 34 76 22" fill="none" stroke="#7A4E24" stroke-width="2.5"/><g fill="#D9D6CF" stroke="#A9A49A" stroke-width="1"><ellipse cx="46" cy="18" rx="6" ry="9" transform="rotate(20 46 18)"/><ellipse cx="54" cy="30" rx="6" ry="9" transform="rotate(20 54 30)"/><ellipse cx="38" cy="52" rx="6" ry="9" transform="rotate(-30 38 52)"/><ellipse cx="32" cy="70" rx="6" ry="9" transform="rotate(-30 32 70)"/><ellipse cx="62" cy="26" rx="5" ry="8" transform="rotate(50 62 26)"/><ellipse cx="74" cy="16" rx="5" ry="8" transform="rotate(50 74 16)"/></g>`,
+ ozolvainags:`<g fill="#2D8A3E"><ellipse cx="50" cy="12" rx="9" ry="14" transform="rotate(0 50 50)"/><ellipse cx="50" cy="12" rx="9" ry="14" transform="rotate(30 50 50)"/><ellipse cx="50" cy="12" rx="9" ry="14" transform="rotate(60 50 50)"/><ellipse cx="50" cy="12" rx="9" ry="14" transform="rotate(90 50 50)"/><ellipse cx="50" cy="12" rx="9" ry="14" transform="rotate(120 50 50)"/><ellipse cx="50" cy="12" rx="9" ry="14" transform="rotate(150 50 50)"/><ellipse cx="50" cy="12" rx="9" ry="14" transform="rotate(180 50 50)"/><ellipse cx="50" cy="12" rx="9" ry="14" transform="rotate(210 50 50)"/><ellipse cx="50" cy="12" rx="9" ry="14" transform="rotate(240 50 50)"/><ellipse cx="50" cy="12" rx="9" ry="14" transform="rotate(270 50 50)"/><ellipse cx="50" cy="12" rx="9" ry="14" transform="rotate(300 50 50)"/><ellipse cx="50" cy="12" rx="9" ry="14" transform="rotate(330 50 50)"/></g><g fill="#5FAF5A"><ellipse cx="50" cy="16" rx="5" ry="8" transform="rotate(15 50 50)"/><ellipse cx="50" cy="16" rx="5" ry="8" transform="rotate(75 50 50)"/><ellipse cx="50" cy="16" rx="5" ry="8" transform="rotate(135 50 50)"/><ellipse cx="50" cy="16" rx="5" ry="8" transform="rotate(195 50 50)"/><ellipse cx="50" cy="16" rx="5" ry="8" transform="rotate(255 50 50)"/><ellipse cx="50" cy="16" rx="5" ry="8" transform="rotate(315 50 50)"/></g><g fill="#B8733A"><circle cx="50" cy="84" r="4"/><circle cx="20" cy="66" r="3.5"/><circle cx="80" cy="66" r="3.5"/></g>`,
+ ziedvainags:`<circle cx="50" cy="50" r="34" fill="none" stroke="#2D8A3E" stroke-width="6"/><g><circle cx="50" cy="16" r="8" fill="#F2B01E"/><circle cx="74" cy="26" r="8" fill="#5B8FD9"/><circle cx="84" cy="50" r="8" fill="#fff" stroke="#E3DCD4"/><circle cx="74" cy="74" r="8" fill="#C0392B"/><circle cx="50" cy="84" r="8" fill="#F2B01E"/><circle cx="26" cy="74" r="8" fill="#5B8FD9"/><circle cx="16" cy="50" r="8" fill="#fff" stroke="#E3DCD4"/><circle cx="26" cy="26" r="8" fill="#C0392B"/></g><g fill="#E8833A"><circle cx="50" cy="16" r="3"/><circle cx="84" cy="50" r="3"/><circle cx="50" cy="84" r="3"/><circle cx="16" cy="50" r="3"/></g>`,
+ ugunskurs:`<polygon points="50,6 70,50 60,44 64,70 50,58 36,70 40,44 30,50" fill="#E8833A"/><polygon points="50,28 60,56 50,50 40,56" fill="#F2B01E"/><g fill="#7A4E24"><rect x="14" y="68" width="72" height="10" rx="4" transform="rotate(14 50 73)"/><rect x="14" y="68" width="72" height="10" rx="4" transform="rotate(-14 50 73)"/></g>`,
+ siers:`<circle cx="50" cy="52" r="40" fill="#F2C43A"/><circle cx="50" cy="52" r="40" fill="none" stroke="#D99A1F" stroke-width="3"/><g fill="#7A4E24"><ellipse cx="36" cy="38" rx="1.6" ry="3.2" transform="rotate(30 36 38)"/><ellipse cx="60" cy="34" rx="1.6" ry="3.2" transform="rotate(-20 60 34)"/><ellipse cx="46" cy="56" rx="1.6" ry="3.2" transform="rotate(60 46 56)"/><ellipse cx="68" cy="58" rx="1.6" ry="3.2"/><ellipse cx="32" cy="64" rx="1.6" ry="3.2" transform="rotate(-40 32 64)"/><ellipse cx="54" cy="74" rx="1.6" ry="3.2" transform="rotate(20 54 74)"/><ellipse cx="72" cy="44" rx="1.6" ry="3.2" transform="rotate(80 72 44)"/></g>`,
+ abols:`<circle cx="50" cy="58" r="34" fill="#C0392B"/><ellipse cx="38" cy="46" rx="7" ry="11" fill="#E0685A"/><rect x="47" y="12" width="6" height="18" rx="2" fill="#7A4E24"/><ellipse cx="66" cy="18" rx="14" ry="7" transform="rotate(-25 66 18)" fill="#2D8A3E"/>`,
+ kirbis:`<ellipse cx="30" cy="60" rx="20" ry="30" fill="#D9731E"/><ellipse cx="70" cy="60" rx="20" ry="30" fill="#D9731E"/><ellipse cx="50" cy="60" rx="22" ry="33" fill="#E8833A"/><rect x="45" y="14" width="10" height="16" rx="3" fill="#6B4A2E"/><ellipse cx="66" cy="22" rx="12" ry="6" transform="rotate(-20 66 22)" fill="#2D8A3E"/>`,
+ kulis:`<g stroke="#C99A3B" stroke-width="3" stroke-linecap="round"><line x1="50" y1="92" x2="50" y2="20"/><line x1="44" y1="92" x2="36" y2="22"/><line x1="56" y1="92" x2="64" y2="22"/><line x1="38" y1="92" x2="22" y2="28"/><line x1="62" y1="92" x2="78" y2="28"/></g><g fill="#E0B558"><ellipse cx="50" cy="14" rx="5" ry="10"/><ellipse cx="35" cy="16" rx="5" ry="10" transform="rotate(-10 35 16)"/><ellipse cx="65" cy="16" rx="5" ry="10" transform="rotate(10 65 16)"/><ellipse cx="20" cy="22" rx="5" ry="10" transform="rotate(-20 20 22)"/><ellipse cx="80" cy="22" rx="5" ry="10" transform="rotate(20 80 22)"/></g><rect x="34" y="60" width="32" height="8" rx="2" fill="#C75000"/>`,
+ maize:`<path d="M10 74 Q10 30 50 30 Q90 30 90 74 Z" fill="#8A5A2B"/><rect x="10" y="72" width="80" height="8" rx="3" fill="#6B4A2E"/><g stroke="#C9A27A" stroke-width="3" stroke-linecap="round"><line x1="30" y1="44" x2="38" y2="58"/><line x1="46" y1="40" x2="54" y2="56"/><line x1="62" y1="44" x2="70" y2="58"/></g>`,
+ jumis:`<g fill="none" stroke="#C75000" stroke-width="7" stroke-linecap="square" stroke-linejoin="miter"><polyline points="30,90 70,30 84,44"/><polyline points="70,90 30,30 16,44"/></g>`,
+ gailis:`<g fill="#2D8A3E"><polygon points="18,30 34,52 12,50"/><polygon points="14,48 34,60 10,68"/></g><polygon points="22,20 38,50 16,40" fill="#2E74B5"/><ellipse cx="50" cy="60" rx="26" ry="20" fill="#C75000"/><ellipse cx="46" cy="60" rx="14" ry="9" fill="#E8833A"/><circle cx="72" cy="34" r="12" fill="#C75000"/><g fill="#C0392B"><circle cx="66" cy="21" r="4.5"/><circle cx="73" cy="19" r="4.5"/><circle cx="80" cy="22" r="4"/></g><polygon points="83,32 95,36 83,40" fill="#F2B01E"/><ellipse cx="80" cy="46" rx="3" ry="5" fill="#C0392B"/><circle cx="74" cy="32" r="2.2" fill="#1F3348"/><g fill="#F2B01E"><rect x="42" y="78" width="4" height="14"/><rect x="56" y="78" width="4" height="14"/><rect x="36" y="90" width="12" height="4"/><rect x="54" y="90" width="12" height="4"/></g>`,
+ zirgs:`<rect x="18" y="42" width="54" height="24" rx="11" fill="#8A5A2B"/><polygon points="62,46 74,16 86,20 74,50" fill="#8A5A2B"/><rect x="70" y="10" width="24" height="13" rx="5" transform="rotate(20 82 16)" fill="#8A5A2B"/><polygon points="70,20 76,14 60,40" fill="#3D2A18"/><polygon points="18,48 6,72 14,72 22,54" fill="#3D2A18"/><g fill="#6B4A2E"><rect x="22" y="62" width="7" height="30" rx="2"/><rect x="32" y="62" width="7" height="30" rx="2"/><rect x="54" y="62" width="7" height="30" rx="2"/><rect x="64" y="62" width="7" height="30" rx="2"/></g><circle cx="80" cy="15" r="1.8" fill="#1F3348"/>`,
+ cuka:`<polygon points="22,30 14,6 40,22" fill="#E89AA6"/><polygon points="78,30 86,6 60,22" fill="#E89AA6"/><circle cx="50" cy="52" r="38" fill="#F4B6C0"/><circle cx="36" cy="40" r="4.5" fill="#1F3348"/><circle cx="64" cy="40" r="4.5" fill="#1F3348"/><ellipse cx="50" cy="64" rx="20" ry="14" fill="#E89AA6"/><ellipse cx="43" cy="64" rx="3.5" ry="5" fill="#B8606E"/><ellipse cx="57" cy="64" rx="3.5" ry="5" fill="#B8606E"/>`,
+ pankukas:`<ellipse cx="50" cy="78" rx="42" ry="10" fill="#E3DCD4"/><ellipse cx="50" cy="70" rx="34" ry="9" fill="#D99A45"/><ellipse cx="50" cy="60" rx="34" ry="9" fill="#E8B45E"/><ellipse cx="50" cy="50" rx="34" ry="9" fill="#D99A45"/><ellipse cx="50" cy="40" rx="34" ry="9" fill="#F2C878"/><ellipse cx="50" cy="37" rx="14" ry="4" fill="#FFF8E6"/>`,
+ zoss:`<ellipse cx="44" cy="64" rx="30" ry="18" fill="#F3F1EC" stroke="#A9A49A" stroke-width="2"/><polygon points="14,58 4,50 18,70" fill="#F3F1EC" stroke="#A9A49A" stroke-width="2"/><rect x="62" y="22" width="10" height="42" rx="5" fill="#F3F1EC" stroke="#A9A49A" stroke-width="2" transform="rotate(10 67 43)"/><circle cx="70" cy="22" r="9" fill="#F3F1EC" stroke="#A9A49A" stroke-width="2"/><polygon points="77,18 94,24 77,28" fill="#E8833A"/><circle cx="72" cy="19" r="2" fill="#1F3348"/><ellipse cx="40" cy="62" rx="16" ry="8" fill="#E3DCD4"/><g fill="#E8833A"><rect x="38" y="80" width="4" height="12"/><rect x="50" y="80" width="4" height="12"/></g>`,
+ tauris:`<g fill="#E8833A"><ellipse cx="30" cy="34" rx="22" ry="18" transform="rotate(-30 30 34)"/><ellipse cx="70" cy="34" rx="22" ry="18" transform="rotate(30 70 34)"/></g><g fill="#2E74B5"><ellipse cx="34" cy="68" rx="14" ry="18" transform="rotate(30 34 68)"/><ellipse cx="66" cy="68" rx="14" ry="18" transform="rotate(-30 66 68)"/></g><g fill="#fff"><circle cx="28" cy="32" r="6"/><circle cx="72" cy="32" r="6"/></g><rect x="46" y="26" width="8" height="54" rx="4" fill="#1F3348"/><g stroke="#1F3348" stroke-width="2" fill="none"><path d="M48 26 Q40 12 34 8"/><path d="M52 26 Q60 12 66 8"/></g>`,
+ papardesZieds:`<g fill="#C0392B"><ellipse cx="50" cy="24" rx="10" ry="18"/><ellipse cx="50" cy="24" rx="10" ry="18" transform="rotate(72 50 46)"/><ellipse cx="50" cy="24" rx="10" ry="18" transform="rotate(144 50 46)"/><ellipse cx="50" cy="24" rx="10" ry="18" transform="rotate(216 50 46)"/><ellipse cx="50" cy="24" rx="10" ry="18" transform="rotate(288 50 46)"/></g><circle cx="50" cy="46" r="9" fill="#F2B01E"/><polyline points="50,56 50,98" stroke="#2D8A3E" stroke-width="3"/>`
+};
+let __iconN=0;
+function iconSVG(key,extra){
+  const id='c'+(++__iconN);
+  return '<svg viewBox="0 0 100 100" '+(extra||'')+' xmlns="http://www.w3.org/2000/svg">'+ICONS[key].replace(/CLIPID/g,id)+'</svg>';
+}
+
+
+const HOL=[
+ {id:'z',name:'Ziemassvētki',color:'#2E74B5',icon:'puzurs',
+  when:'Ziemas saulgrieži — gada garākā nakts (ap 21. decembri). Mūsdienās svin no 24. līdz 26. decembrim.',
+  sym:['puzurs','blukis','egle'],
+  list:[
+   ['egle','Egle','Mājās ienes egli un izrotā to. Senāk egli rotāja ar salmu rotājumiem, āboliem, riekstiem un svecītēm, mūsdienās arī ar stikla bumbiņām un gaismiņām.'],
+   ['blukis','Bluķa vilkšana','Bluķi velk apkārt sētai un pēc tam sadedzina. Tā sadeg visas gada bēdas un nelaimes.'],
+   ['kaza','Budēļos iešana','Ļaudis pārģērbjas par kazu, lāci, zirgu vai dzērvi un iet no mājas uz māju. Budēļi dzied, dejo un nes svētību.'],
+   ['puzurs','Puzuru siešana','No rudzu salmiem sien puzurus un pakar tos virs galda. Puzurs sargā māju un nes laimi.'],
+   ['saule','Saules atdzimšana','Pēc garākās nakts dienas atkal kļūst garākas. Ļaudis priecājas, ka saule atgriežas.'],
+   ['svece','Sveces, piparkūkas un dāvanas','Iededz sveces, cep piparkūkas, dāvina dāvanas un skaita dzejoļus.']]},
+ {id:'m',name:'Meteņi',color:'#5B9BD5',icon:'ragavas',
+  when:'Ziemas un pavasara mija — februārī, septiņas nedēļas pirms Lieldienām.',
+  sym:['ragavas','lins','cuka'],
+  list:[
+   ['ragavas','Vizināšanās no kalna','Jo tālāk aizslīd ragavas, jo garāki vasarā izaugs lini.'],
+   ['lins','Lini','No liniem vērpa diegus un auda audumu drēbēm, tāpēc lini bija ļoti svarīgi.'],
+   ['kaza','Budēļi un ciemošanās','Ļaudis maskojas, brauc ar ragavām ciemos pie kaimiņiem, dzied un dejo.'],
+   ['cuka','Cūkas šņukurs','Meteņos galdā liek cūkas galvu. Bērniem dod šņukuru, lai viņi skaisti rakstītu.'],
+   ['pankukas','Miežu pankūkas','Meteņu galdā ir arī miežu putraimu pankūkas un miežu putra. Tās ir apdziedātas tautasdziesmās.']]},
+ {id:'l',name:'Lieldienas',color:'#4E9F4A',icon:'ola',
+  when:'Pavasara saulgrieži — diena un nakts ir vienlīdz garas (ap 20. martu). Mūsdienās svin marta beigās vai aprīlī.',
+  sym:['ola','supoles','pupoli'],
+  list:[
+   ['ola','Olu krāsošana','Olas krāso sīpolu mizās un citu augu novārījumos. Ar olām ripina un sit — kuras ola paliks vesela?'],
+   ['supoles','Šūpošanās','Sien šūpoles. Ticēja, ka tam, kurš šūpojas, vasarā odi nekodīs.'],
+   ['pupoli','Pūpoli','Pūpolsvētdienā ar pūpolu zaru viegli pēra un sauca: „Veselība iekšā, slimība ārā!”'],
+   ['saule','Agra celšanās','Lieldienu rītā cēlās pirms saullēkta un mazgājās tekošā ūdenī, lai būtu veseli.']]},
+ {id:'j',name:'Jāņi',color:'#E0A10F',icon:'ozolvainags',
+  when:'Vasaras saulgrieži — gada īsākā nakts. Līgo vakaru svin 23. jūnijā, Jāņu dienu — 24. jūnijā.',
+  sym:['ozolvainags','ugunskurs','siers'],
+  list:[
+   ['ozolvainags','Vainagi','Vīri pin vainagus no ozola lapām, sievas un meitas — no pļavas ziediem.'],
+   ['ugunskurs','Jāņuguns','Visu nakti deg ugunskurs, lai saule spīdētu gaiši visu gadu.'],
+   ['siers','Jāņu siers','Siers ar ķimenēm ir apaļš un dzeltens — gluži kā saule.'],
+   ['papardesZieds','Papardes zieds','Teika vēsta, ka papardes zieds uzzied tikai Jāņu naktī. Kurš to atrod, kļūst laimīgs.'],
+   ['ziedvainags','Līgo dziesmas','Dzied līgo dziesmas un rotā mājas ar meijām un jāņuzālēm.'],
+   ['saule','Saullēkta sagaidīšana','Daudzi visu nakti ir nomodā un sagaida saullēktu.']]},
+ {id:'k',name:'Miķeļi',color:'#E07A2E',icon:'abols',
+  when:'Rudens saulgrieži — diena un nakts atkal ir vienlīdz garas. Miķeļdienu svin 29. septembrī.',
+  sym:['abols','kirbis','jumis'],
+  list:[
+   ['kulis','Ražas beigas','Novāc labību. Pēdējo kūli sien ar īpašu godu.'],
+   ['jumis','Jumis','Divas kopā saaugušas vārpas sauc par Jumi. Tā ir bagātas ražas zīme.'],
+   ['maize','Svētku mielasts','Galdā liek jaunās ražas maizi, dārzeņus un medu.'],
+   ['abols','Miķeļdienas tirgi','Tirgos pārdod ābolus, ķirbjus, medu un amatnieku darinājumus.'],
+   ['kirbis','Jaunā raža','Āboli, ķirbji un dārzeņi ir gan tirgos, gan svētku galdā.']]},
+ {id:'r',name:'Mārtiņi',color:'#9A5B2E',icon:'gailis',
+  when:'Ziemas sākums — 10. novembrī. Ar Mārtiņiem beidzas rudens darbi un sākas ķekatu laiks.',
+  sym:['gailis','zoss','zirgs'],
+  list:[
+   ['gailis','Gailis','Gailis ir Mārtiņdienas putns. Svētku galdā liek gaiļa gaļu.'],
+   ['zirgs','Zirgi','Mārtiņš ir zirgu aizbildnis. Šajā dienā zirgus īpaši rūpīgi kopj un baro.'],
+   ['lacis','Mārtiņbērni','Ķekatnieki jeb Mārtiņbērni maskojas un iet no sētas uz sētu. Saimnieki viņus uzņem un cienā, bet Mārtiņbērni nes svētību.'],
+   ['zoss','Mārtiņa zoss','Mārtiņos cep zosi. Šo tradīciju latvieši pārņēma no kaimiņtautām, un tā ir kļuvusi ļoti mīļa.'],
+   ['maize','Svētku mielasts','Raža ir novākta, tāpēc galdā liek maizi, pīrāgus un citus labumus.']]}
+];
+/* Tautasdziesmas. LD — K. Barona „Latvju dainas” (dainuskapis.lv); LTdz — „Latviešu tautasdziesmas IV. Gadskārtu ieražu dziesmas” (R., 1982). Rakstība modernizēta. */
+const SONGS={
+ z:[['LD 33292','Ziemassvētki, liela diena,\nTie Dievam dārgi laiki;\nZiemassvētki bluķi vilka,\nLiela diena šūpli kāra.'],
+    ['LD 33303','Sen gaidīju, nu atnāca\nTie bagāti Ziemassvētki.\nZiemassvētki atbraukuši\nRakstītām kamanām.'],
+    ['LD 33328','Lūdzama māmiņa,\nLaid bērnus iekšā,\nĶekatu bērniem\nKājiņas salst.'],
+    ['LD 33287','Ziemassvētki atbrauca\nPa rudzu lauku,\nZālīti mīdami,\nAsniņus celdami.']],
+ m:[['LD 32232','Viza, viza kamaniņas\nMetenīša vakarā;\nTā vizēja liniņam\nZelta poga galiņā.'],
+    ['LD 32209','Ap Meteni slaiži laižu,\nLai liniņi gari aug;\nAp Lieldienu šūpojos,\nLai telītes barojās.'],
+    ['LD 32210','Audziet man gari, lini,\nMirkstiet balti ezerā,\nEs māsiņas vizināju\nMetenīša vakarā.'],
+    ['LD 32220','Metens brauca pār Daugavu,\nCūkas ausis kulītē.\nBrauc, Meteni, Vidzemē,\nDabūs\' pilnu kamaniņu.']],
+ l:[['LD 32240','Brāļi, brāļi, Liela diena,\nKur kārsim šūpulīti?\n— Aiz upītes kalniņā\nDiv\' sudraba ozoliņi.'],
+    ['LD 32282','Man pakāra brāleliņi\nVizulīšu šūpolītes;\nSkan podziņas, skan zīlītes,\nSkan vizuļu šūpolītes.'],
+    ['LD 32261','Kariet, brāļi, šūpolītes\nOzoliņa kārtiņām,\nNāks māsiņa šūpoties\nVisas trejas Lieldieniņas.'],
+    ['LD 32250','Eit\' projām, Lieldieniņas,\nAr baltāmi oliņām;\nEs gaidīšu Jurģa dienas\nAr zaļo rudzuzālīti.']],
+ j:[['LD 32895','Kas mirdzēja, kas vizēja\nViņā lauka galiņā?\nJānīts kūra uguntiņu,\nSavus bērnus gaidīdams.'],
+    ['LD 32891','Īsa, īsa Jāņu nakts\nPar visām naksniņām:\nTe satumsa, te izausa\nPie Jānīša uguntiņas.'],
+    ['LD 32323','Es iespraudu ozoliņu\nPagalmiņa viducī;\nJānīts kāra cepurīti,\nEs pakāru vainadziņu.'],
+    ['LD 32409','Sīkas puķes, lielas puķes\nZiedēj\' visu vasariņu;\nPapardīte, gudreniece,\nTā ziedēja Jāņa nakti.']],
+ k:[['LTdz 17354','Lieldieniņa liela diena,\nTā atnāca tukšu roku;\nMiķelītis mazs vīriņš,\nTas atnāca pilnu roku.'],
+    ['LTdz 17347','Jānīts meta siena kaudzi,\nJēkabiņš rudzu kaudzi,\nMiķelīts nokliedzās\nAuzu kaudzes galiņā.'],
+    ['LTdz 17361','Kas tur spīdēj\', kas tur mirdzēj\'\nManā staļļa pakaļā?\nMikālīts zirgus dīda\nAr sidraba iemauktiem.'],
+    ['LD 33237','Miķelītis arti gāja\nAr dzeltenu kumeliņu,\nLīze nesa launadziņu\nŠņaukādama, raudādama.']],
+ r:[['LTdz 17384','Zeme rīb, rati klaudz,\nKas to zemi rībināja?\nNu atbrauca Mārtiņdiena\nDeviņiem kumeļiem.'],
+    ['LTdz 17392','Kas tur dīc, kas tur rīb\nAp to mūsu istabiņu?\nMārtiņš gaili dancī veda,\nAp istabu tekādams.'],
+    ['LTdz 17441','Es gaidīju Mārtiņdienu\nTā kā lielu svētku dienu:\nMīksts plācenis muldiņā,\nZosu gaļa bļodiņā.'],
+    ['LD 33244','Ej, Mārtiņ, nu uz Rīgu,\nNu mēs tevi pavadām;\nNāc atkal citu gadu,\nTad mēs tevi gaidīsim.']]
+};
+
+const NAMES={puzurs:'Puzurs',blukis:'Bluķis',egle:'Egle',ragavas:'Ragavas',cuka:'Cūkas šņukurs',lins:'Lina zieds',ola:'Krāsota ola',supoles:'Šūpoles',pupoli:'Pūpoli',ozolvainags:'Ozollapu vainags',ugunskurs:'Ugunskurs',siers:'Jāņu siers',abols:'Ābols',kirbis:'Ķirbis',jumis:'Jumis',gailis:'Gailis',zoss:'Zoss',pankukas:'Miežu pankūkas',zirgs:'Zirgs'};
+
+/* ═══ ritenis ═══ */
+const W=document.getElementById('wheel');
+const CX=400,CY=395,R=385,R0=95;
+const NS='http://www.w3.org/2000/svg';
+function pt(r,deg){const a=deg*Math.PI/180;return[CX+r*Math.cos(a),CY+r*Math.sin(a)];}
+function angOf(i){return -90+i*60;} // sektora centrs
+let mode='learn',cur=null;
+const sectors=[],slotG=[];
+function buildWheel(){
+  W.innerHTML='';
+  HOL.forEach((h,i)=>{
+    const a=angOf(i),a0=a-30,a1=a+30;
+    const [x0,y0]=pt(R,a0),[x1,y1]=pt(R,a1),[u0,v0]=pt(R0,a0),[u1,v1]=pt(R0,a1);
+    const g=document.createElementNS(NS,'g');g.setAttribute('class','sector');g.dataset.i=i;
+    const p=document.createElementNS(NS,'path');
+    p.setAttribute('d',`M${u0} ${v0} L${x0} ${y0} A${R} ${R} 0 0 1 ${x1} ${y1} L${u1} ${v1} A${R0} ${R0} 0 0 0 ${u0} ${v0}Z`);
+    p.setAttribute('fill',h.color);p.setAttribute('stroke','#FBF9F6');p.setAttribute('stroke-width','6');
+    g.appendChild(p);
+    const side=(i%3)!==0;const [tx,ty]=pt(side?312:338,a);
+    const tt=document.createElementNS(NS,'text');tt.setAttribute('x',tx);tt.setAttribute('y',ty+9);tt.setAttribute('text-anchor','middle');tt.setAttribute('font-size','28');tt.setAttribute('class','sname');if(side)tt.setAttribute('font-size','25');tt.textContent=h.name;
+    g.appendChild(tt);
+    const sg=document.createElementNS(NS,'g');g.appendChild(sg);slotG[i]=sg;
+    g.addEventListener('click',()=>onSector(i));
+    W.appendChild(g);sectors[i]=g;
+  });
+  const hub=document.createElementNS(NS,'g');
+  hub.innerHTML=`<circle cx="${CX}" cy="${CY}" r="${R0-4}" fill="#FFF8E6" stroke="#F2B01E" stroke-width="4"/><g transform="translate(${CX-42} ${CY-54}) scale(.84)">${ICONS.saule}</g><text x="${CX}" y="${CY+56}" text-anchor="middle" font-size="19" fill="#1F3348" font-family="Candara,Aptos,sans-serif">Gada ritenis</text>`;
+  W.appendChild(hub);
+  drawSectorContent();
+}
+function drawSectorContent(){
+  HOL.forEach((h,i)=>{
+    const sg=slotG[i];sg.innerHTML='';const a=angOf(i);
+    if(mode==='learn'){
+      const [x,y]=pt(200,a);
+      sg.innerHTML=`<circle cx="${x}" cy="${y}" r="58" fill="rgba(255,255,255,.92)"/><g transform="translate(${x-42} ${y-42}) scale(.84)">${ICONS[h.icon].replace(/CLIPID/g,'w'+i)}</g>`;
+    }else{
+      [-17,0,17].forEach((o,k)=>{
+        const [x,y]=pt(k===1?172:250,a+(k===1?0:o*1.06));
+        const key=placed[i][k];
+        if(key){sg.innerHTML+=`<g class="placed"><circle cx="${x}" cy="${y}" r="37" fill="#fff"/><g transform="translate(${x-30} ${y-30}) scale(.6)">${ICONS[key].replace(/CLIPID/g,'p'+i+k)}</g></g>`;}
+        else sg.innerHTML+=`<circle class="slot" cx="${x}" cy="${y}" r="37"/>`;
+      });
+    }
+  });
+  sectors.forEach((s,i)=>s.classList.toggle('dim',mode==='learn'&&cur!==null&&cur!==i));
+}
+
+/* ═══ iepazīšana ═══ */
+const hint=document.getElementById('startHint');
+hint.innerHTML=iconSVG('saule')+'Pieskaries kādiem svētkiem uz riteņa un uzzini par to tradīcijām un simboliem.';
+function onSector(i){
+  if(mode==='learn'){if(cur!==i)songSel=0;cur=i;showHol();drawSectorContent();}
+  else dropOn(i);
+}
+function showHol(){
+  const h=HOL[cur];
+  hint.style.display='none';const v=document.getElementById('holView');v.style.display='flex';
+  const ic=document.getElementById('hIcon');ic.style.background=h.color+'22';ic.innerHTML=iconSVG(h.icon);
+  document.getElementById('hName').textContent=h.name;document.getElementById('hName').style.color=h.color;
+  document.getElementById('hWhen').textContent=h.when;
+  const list=h.list;
+  document.getElementById('items').innerHTML=list.map((it,k)=>`<div class="item" style="animation-delay:${k*60}ms">${iconSVG(it[0])}<div><b>${it[1]}</b><span>${it[2]}</span></div></div>`).join('');
+  const sg=SONGS[h.id]||[];
+  document.getElementById('songs').innerHTML=sg.map((x,k)=>`<div class="song ${k===songSel?'on':''}" data-k="${k}" style="animation-delay:${k*60}ms"><span class="ld">${x[0]}</span>${x[1].replace(/\n/g,'<br>')}</div>`).join('')+
+   `<div class="task4"><b>Radošais darbs.</b> Izvēlies vienu tautasdziesmu un uzglezno to. Izmanto stilizētus svētku simbolus un sāc ar lielajām formām!</div>`+
+   `<div class="row2"><button class="btn main" id="bigBtn">Rādīt lielā izmērā</button><span style="font-size:16px;color:var(--muted)">Pieskaries tautasdziesmai, lai to izvēlētos.</span></div>`;
+  document.querySelectorAll('.song').forEach(el=>el.onclick=()=>{songSel=+el.dataset.k;document.querySelectorAll('.song').forEach(x=>x.classList.toggle('on',x===el));});
+  document.getElementById('bigBtn').onclick=()=>{const x=sg[songSel];if(!x)return;
+    document.getElementById('bsIc').innerHTML=iconSVG(h.icon);document.getElementById('bsTxt').innerHTML=x[1].replace(/\n/g,'<br>');
+    document.getElementById('bsSrc').textContent=h.name+' · Latviešu tautasdziesma, '+x[0];document.getElementById('bigSong').classList.add('on');};
+  setView(view);
+}
+let view='trad',songSel=0;
+function setView(v){view=v;
+  document.querySelectorAll('.view .tab').forEach(b=>b.classList.toggle('on',b.dataset.v===v));
+  document.getElementById('items').style.display=v==='trad'?'flex':'none';
+  document.getElementById('note').style.display=v==='trad'?'block':'none';
+  document.getElementById('songs').style.display=v==='song'?'grid':'none';
+}
+document.querySelectorAll('.view .tab').forEach(b=>b.onclick=()=>setView(b.dataset.v));
+document.getElementById('bsClose').onclick=()=>document.getElementById('bigSong').classList.remove('on');
+
+/* ═══ šķirošana ═══ */
+let placed,sel=null,count=0;
+const tray=document.getElementById('tray'),msg=document.getElementById('msg');
+function ownerOf(key){return HOL.findIndex(h=>h.sym.includes(key));}
+function resetSort(){
+  placed=HOL.map(()=>[null,null,null]);count=0;sel=null;
+  const keys=shuffle(HOL.flatMap(h=>h.sym));
+  tray.innerHTML=keys.map(k=>`<div class="tilewrap"><div class="tile" data-k="${k}">${iconSVG(k)}</div><div class="tname">${NAMES[k]}</div></div>`).join('');
+  tray.querySelectorAll('.tile').forEach(el=>el.addEventListener('pointerdown',startDrag));
+  setMsg('','');updScore();drawSectorContent();
+}
+function setMsg(txt,cls){msg.className='msg '+cls;msg.innerHTML=txt;}
+function updScore(){document.getElementById('cnt').textContent=count;document.getElementById('bar').style.width=(count/18*100)+'%';}
+function selectTile(el){
+  tray.querySelectorAll('.tile').forEach(x=>x.classList.remove('sel'));
+  sel=el;if(el){el.classList.add('sel');setMsg('Tagad pieskaries svētkiem, pie kuriem pieder <b>'+NAMES[el.dataset.k].toLowerCase()+'</b>.','');}
+}
+function dropOn(i){
+  if(!sel)return;
+  const k=sel.dataset.k,own=ownerOf(k),el=sel;
+  if(own===i){
+    const slot=placed[i].indexOf(null);placed[i][slot]=k;count++;
+    el.classList.add('used');el.classList.remove('sel');sel=null;
+    el.parentNode.querySelector('.tname').style.visibility='hidden';
+    setMsg('✔ Pareizi! '+NAMES[k]+' ir '+gen(HOL[i].name)+' simbols.','ok');
+    updScore();drawSectorContent();
+    if(count===18)setTimeout(()=>setMsg('🎉 Lieliski! Visi 18 simboli ir savās vietās. Tu pazīsti latviešu gadskārtu svētkus!','ok'),900);
+  }else{
+    el.classList.remove('shake');void el.offsetWidth;el.classList.add('shake');
+    setMsg('✘ '+NAMES[k]+' nav '+gen(HOL[i].name)+' simbols. Padomā vēlreiz!','no');
+  }
+}
+function gen(n){return {Ziemassvētki:'Ziemassvētku',Meteņi:'Meteņu',Lieldienas:'Lieldienu',Jāņi:'Jāņu',Miķeļi:'Miķeļu',Mārtiņi:'Mārtiņu'}[n];}
+
+/* vilkšana */
+const ghost=document.getElementById('ghost');
+let drag=null;
+function toStage(e){const r=stage.getBoundingClientRect();return[(e.clientX-r.left)/SCALE,(e.clientY-r.top)/SCALE];}
+function sectorAt(e){
+  const r=W.getBoundingClientRect();const x=(e.clientX-r.left)/r.width*800,y=(e.clientY-r.top)/r.height*790;
+  const dx=x-CX,dy=y-CY,d=Math.hypot(dx,dy);if(d<R0||d>R)return -1;
+  let a=Math.atan2(dy,dx)*180/Math.PI+90+30;a=((a%360)+360)%360;return Math.floor(a/60);
+}
+function startDrag(e){
+  const el=e.currentTarget;if(el.classList.contains('used'))return;
+  e.preventDefault();selectTile(el);
+  drag={el,x0:e.clientX,y0:e.clientY,moved:false};
+  ghost.innerHTML=iconSVG(el.dataset.k,'width="96" height="96"');
+  window.addEventListener('pointermove',moveDrag);window.addEventListener('pointerup',endDrag,{once:true});
+}
+function moveDrag(e){
+  if(!drag)return;
+  if(!drag.moved&&Math.hypot(e.clientX-drag.x0,e.clientY-drag.y0)<8)return;
+  drag.moved=true;ghost.style.display='block';
+  const [x,y]=toStage(e);ghost.style.left=(x-48)+'px';ghost.style.top=(y-48)+'px';
+  const s=sectorAt(e);sectors.forEach((g,i)=>g.classList.toggle('target',i===s));
+}
+function endDrag(e){
+  window.removeEventListener('pointermove',moveDrag);
+  ghost.style.display='none';sectors.forEach(g=>g.classList.remove('target'));
+  if(drag&&drag.moved){const s=sectorAt(e);if(s>=0)dropOn(s);}
+  drag=null;
+}
+document.getElementById('reset').addEventListener('click',resetSort);
+
+/* ═══ režīmi ═══ */
+document.querySelectorAll('header .tab').forEach(b=>b.addEventListener('click',()=>{
+  mode=b.dataset.mode;
+  document.querySelectorAll('header .tab').forEach(x=>x.classList.toggle('on',x===b));
+  document.getElementById('learn').style.display=mode==='learn'?'flex':'none';
+  document.getElementById('sort').style.display=mode==='sort'?'flex':'none';
+  drawSectorContent();
+}));
+buildWheel();resetSort();
+</script>
+</body>
+</html>
